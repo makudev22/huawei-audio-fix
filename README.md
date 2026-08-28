@@ -49,6 +49,8 @@ The script was tested on:
 - PipeWire 1.6.8 and WirePlumber 0.5.15;
 - Intel audio controller `8086:a0c8`.
 
+LICENSE: MIT
+
 After reboot, speakers, headphones, and an analog capture device appeared. The built-in microphone still recorded silence because the ES8336 ACPI/I2C connection is not exposed by the firmware.
 
 The BOD-WXX9-PCB-B4 and BOD-WXX9-PCB-B5 revisions are very similar, but were not tested separately with this script.
