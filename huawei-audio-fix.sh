@@ -7,6 +7,7 @@ readonly FIRMWARE_DIR="/lib/firmware/intel/sof-tplg"
 readonly FIRMWARE_NAME="sof-tgl-es8336-dmic2ch.tplg"
 readonly FIRMWARE_TARGET="sof-tgl-es8336-dmic2ch-ssp0.tplg"
 readonly HEADPHONE_SERVICE="huawei-soundcard-headphones-monitor.service"
+readonly BACKUP_FILE="/var/backups/huawei-audio-fix.modprobe.conf"
 
 say() {
     printf '%s\n' "$*"
@@ -21,6 +22,13 @@ require_root() {
     [[ ${EUID} -eq 0 ]] || fail "run this script with sudo: sudo ./huawei-audio-fix.sh"
 }
 
+check_dependencies() {
+    local command_name
+    for command_name in lspci grep systemctl update-initramfs; do
+        command -v "$command_name" >/dev/null || fail "required command not found: $command_name"
+    done
+}
+
 check_hardware() {
     if ! lspci -nn 2>/dev/null | grep -q '8086:a0c8'; then
         fail "Intel audio controller 8086:a0c8 was not found; this script targets the Huawei MateBook D15 BOD-WXX9."
@@ -28,6 +36,10 @@ check_hardware() {
 }
 
 install_modprobe_config() {
+    if [[ -e "$MODPROBE_FILE" && ! -e "$BACKUP_FILE" ]]; then
+        install -D -m 644 "$MODPROBE_FILE" "$BACKUP_FILE"
+    fi
+
     cat > "$MODPROBE_FILE" <<'EOF'
 # Huawei MateBook D15 BOD-WXX9: the ACPI firmware does not expose the ES8336 I2C link.
 # Use the HDA codec path so speakers and the headphone jack remain available.
@@ -35,6 +47,22 @@ options snd-intel-dspcfg dsp_driver=1
 options snd-hda-intel dmic_detect=0
 options snd-hda-intel index=0
 EOF
+}
+
+uninstall() {
+    if [[ -L "$FIRMWARE_DIR/$FIRMWARE_NAME" ]]; then
+        rm "$FIRMWARE_DIR/$FIRMWARE_NAME"
+    fi
+
+    if [[ -f "$BACKUP_FILE" ]]; then
+        install -m 644 "$BACKUP_FILE" "$MODPROBE_FILE"
+        rm "$BACKUP_FILE"
+    else
+        rm -f "$MODPROBE_FILE"
+    fi
+
+    update-initramfs -u
+    say "The audio workaround was removed. Reboot to restore the previous driver configuration."
 }
 
 install_firmware_alias() {
@@ -68,6 +96,13 @@ show_status() {
 
 main() {
     require_root
+    check_dependencies
+
+    if [[ ${1:-} == "--uninstall" ]]; then
+        uninstall
+        return
+    fi
+
     check_hardware
     install_modprobe_config
     install_firmware_alias
