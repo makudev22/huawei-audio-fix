@@ -1,5 +1,6 @@
+# Huawei MateBook audio fix
 
-# Huawei audio fix
+WILL MESS UP YOUR MIC
 
 A small fix script for the Huawei MateBook D15 BOD-WXX9 on Kali Linux and other Debian-based systems.
 
@@ -15,6 +16,13 @@ sudo ./huawei-audio-fix.sh
 sudo reboot
 ```
 
+The script creates a backup of an existing audio configuration before changing it. To remove the workaround and restore that configuration:
+
+```bash
+sudo ./huawei-audio-fix.sh --uninstall
+sudo reboot
+```
+
 After reboot, check the result with:
 
 ```bash
@@ -27,6 +35,8 @@ wpctl status
 The internal microphone may not work or may record silence. In HDA mode, it cannot access the ES8336 digital microphone. A USB headset, external USB microphone, or Bluetooth headset can be used for recording. Fully restoring the built-in microphone requires an ACPI/BIOS fix or a kernel patch for the specific motherboard revision.
 
 The script checks for audio controller `8086:a0c8` and exits on other hardware.
+
+The script requires `lspci`, `systemctl`, and `update-initramfs`, and must be run as root. Review the script before running it on a production system.
 
 ## Tested on
 
